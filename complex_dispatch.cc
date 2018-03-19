@@ -27,15 +27,16 @@ template <typename T, typename = void> struct is_custom_diploid : false_type
 };
 
 template <typename T>
-    struct is_custom_diploid<T, decltype(get<0>(T{}))>
-    : is_null_pointer<typename remove_reference<decltype(get<0>(T{}))>::type>::value
-     
-//! is_null_pointer<decltype(get<0>(T{}))>::value>
+struct is_custom_diploid<
+    T, typename void_t<typename tuple_element<0, T>::type>::type>
+    : std::integral_constant<
+          bool, !is_null_pointer<typename tuple_element<0, T>::type>::value>
 {
 };
 
 using dip = std::tuple<nullptr_t, pair<int, int>>;
 using cdip = std::tuple<int, pair<int, int>>;
+using vdip = std::tuple<void, int>;
 
 void f(nullptr_t) { cout << "nullptr\n"; }
 void
@@ -53,13 +54,29 @@ a(const T& t)
     cout << typeid(decltype(get<0>(T{}))).name() << '\n';
 }
 
+struct S
+{
+    // template<typename A>
+    // inline void operator()(const A &)const
+    // {
+    // 	cout << "not nullptr\n";
+    // }
+    template <typename A,
+              typename B
+              = typename is_null_pointer<decltype(get<0>(A{}))>::type>
+    inline void
+    operator()(const A&) const
+    {
+        cout << B() << '\n';
+    }
+};
+
 int
 main(int argc, char** argv)
 {
-    auto x = is_custom_diploid<dip>::value;
-    cout << x << '\n';
-    x = is_custom_diploid<cdip>::value;
-    cout << x << '\n';
+    cout << "dip is custom: " << is_custom_diploid<dip>::value << '\n';
+    cout << "cdip is custom: " << is_custom_diploid<cdip>::value << '\n';
+    cout << "int is custom dip: " << is_custom_diploid<int>::value << '\n';
     cout << is_null_pointer<decltype(get<0>(dip{}))>::value << '\n';
     cout << is_null_pointer<nullptr_t>::value << '\n';
     cout
@@ -74,4 +91,7 @@ main(int argc, char** argv)
 
     a(dip());
     a(cdip());
+
+    S()(dip());
+    S()(cdip());
 }
