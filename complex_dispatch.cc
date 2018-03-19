@@ -36,7 +36,6 @@ struct is_custom_diploid<
 
 using dip = std::tuple<nullptr_t, pair<int, int>>;
 using cdip = std::tuple<int, pair<int, int>>;
-using vdip = std::tuple<void, int>;
 
 void f(nullptr_t) { cout << "nullptr\n"; }
 void
