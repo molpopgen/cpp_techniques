@@ -1,6 +1,7 @@
 // Models current proposal in fwdpp to refactor def'n of diploid
 
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include <tuple>
 #include <iostream>
@@ -52,10 +53,12 @@ struct is_single_region_diploid : false_type
 
 template <typename T>
 struct is_single_region_diploid<
-    T, typename void_t<typename tuple_element<0, T>::type,
-                       typename tuple_element<1, T>::type>::type>
+    T, typename void_t<typename tuple_element<1, T>::type>::type>
     : std::integral_constant<
-          bool, is_pair_like<typename tuple_element<1, T>::type>::value>
+          bool, (is_integral<typename tuple_element<0, T>::type>::value
+                 && is_integral<typename tuple_element<1, T>::type>::value
+                 && is_pair_like<T>::value)
+                    || is_pair_like<typename tuple_element<1, T>::type>::value>
 {
 };
 
@@ -120,6 +123,17 @@ main(int argc, char** argv)
          << "mdip is multi region: " << is_multi_region_diploid<mdip>::value
          << '\n'
          << "mdip is custom: " << is_custom_diploid<mdip>::value << '\n';
+    cout << "pair<int,int> is single region: "
+         << is_single_region_diploid<pair<int, int>>::value << '\n'
+         << "pair<int,pair<int,int>> is single region "
+         << is_single_region_diploid<pair<int, pair<int, int>>>::value << '\n'
+         << "pair<int,tuple<int,int>> is single region "
+         << is_single_region_diploid<pair<int, tuple<int, int>>>::value << '\n'
+         << "tuple<int,pair<int,int>> is single region "
+         << is_single_region_diploid<tuple<int, pair<int, int>>>::value << '\n'
+         << "tuple<int,int> is single region: "
+         << is_single_region_diploid<tuple<int, int>>::value << '\n';
+
     cout << is_null_pointer<decltype(get<0>(dip{}))>::value << '\n';
     cout << is_null_pointer<nullptr_t>::value << '\n';
     cout
