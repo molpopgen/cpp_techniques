@@ -26,7 +26,8 @@ template <typename...> struct void_t
     typedef void type;
 };
 
-template <typename T, typename = void> struct is_pair_unsigned_like : false_type
+template <typename T, typename = void>
+struct is_pair_unsigned_like : false_type
 {
 };
 
@@ -51,7 +52,8 @@ struct is_single_region_diploid<
           bool, (is_integral<typename tuple_element<0, T>::type>::value
                  && is_integral<typename tuple_element<1, T>::type>::value
                  && is_pair_unsigned_like<T>::value)
-                    || is_pair_unsigned_like<typename tuple_element<0, T>::type>::value>
+                    || is_pair_unsigned_like<
+                           typename tuple_element<0, T>::type>::value>
 {
 };
 
@@ -90,6 +92,14 @@ struct is_custom_diploid<
 };
 
 template <typename T, typename = void> struct is_diploid : std::false_type
+{
+};
+
+template <typename T>
+struct is_diploid<T, typename void_t<typename T::allocator_type>::type>
+    : std::integral_constant<bool, is_multi_region_diploid<T>::value>
+//! Warning: this may be hack-ish, as it requires any vector-like
+// type to use an allocator
 {
 };
 
@@ -331,9 +341,17 @@ main(int argc, char** argv)
     static_assert(is_diploid<decltype(y)>::value, "foo");
     static_assert(is_diploid<decltype(md)>::value, "foo");
     static_assert(is_diploid<decltype(ad)>::value, "foo");
+    static_assert(is_diploid<vector<pair<unsigned, unsigned>>>::value, "foo");
+    static_assert(is_diploid<array<pair<unsigned, unsigned>, 2>>::value,
+                  "foo");
+
+    // We do not care how long a tuple is for a custom diploid
+    static_assert(
+        is_diploid<tuple<pair<unsigned, unsigned>, int, float>>::value, "foo");
 
     // These are NOT diploids
-	static_assert(!is_diploid<pair<int,int>>::value, "foo"); //int not unsigned
+    static_assert(!is_diploid<pair<int, int>>::value,
+                  "foo"); // int not unsigned
     static_assert(!is_diploid<tuple<int, int>>::value, "foo");
     static_assert(!is_diploid<int>::value, "foo");
     static_assert(!is_custom_diploid<tuple<int, int>>::value, "foo");
