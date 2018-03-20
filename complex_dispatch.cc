@@ -34,9 +34,49 @@ struct is_custom_diploid<
 {
 };
 
+template <typename T, typename = void> struct is_pair_like : false_type
+{
+};
+
+template <typename T>
+struct is_pair_like<
+    T, typename void_t<typename T::first_type, typename T::second_type>::type>
+    : true_type
+{
+};
+
+template <typename T, typename = void>
+struct is_single_region_diploid : false_type
+{
+};
+
+template <typename T>
+struct is_single_region_diploid<
+    T, typename void_t<typename tuple_element<0, T>::type,
+                       typename tuple_element<1, T>::type>::type>
+    : std::integral_constant<
+          bool, is_pair_like<typename tuple_element<1, T>::type>::value>
+{
+};
+
+template <typename T, typename = void>
+struct is_multi_region_diploid : false_type
+{
+};
+
+template <typename T>
+struct is_multi_region_diploid<
+    T, typename void_t<typename tuple_element<1, T>::type,
+                       typename tuple_element<1, T>::type::value_type>::type>
+    : std::integral_constant<
+          bool,
+          is_pair_like<typename tuple_element<1, T>::type::value_type>::value>
+{
+};
+
 using dip = std::tuple<nullptr_t, pair<int, int>>;
 using cdip = std::tuple<int, pair<int, int>>;
-
+using mdip = std::tuple<nullptr_t, vector<pair<int, int>>>;
 void f(nullptr_t) { cout << "nullptr\n"; }
 void
 f(int)
@@ -55,11 +95,6 @@ a(const T& t)
 
 struct S
 {
-    // template<typename A>
-    // inline void operator()(const A &)const
-    // {
-    // 	cout << "not nullptr\n";
-    // }
     template <typename A,
               typename B
               = typename is_null_pointer<decltype(get<0>(A{}))>::type>
@@ -73,9 +108,18 @@ struct S
 int
 main(int argc, char** argv)
 {
+    cout << "dip is single region: " << is_single_region_diploid<dip>::value
+         << '\n';
     cout << "dip is custom: " << is_custom_diploid<dip>::value << '\n';
+    cout << "cdip is single region: " << is_single_region_diploid<cdip>::value
+         << '\n';
     cout << "cdip is custom: " << is_custom_diploid<cdip>::value << '\n';
     cout << "int is custom dip: " << is_custom_diploid<int>::value << '\n';
+    cout << "mdip is single region: " << is_single_region_diploid<mdip>::value
+         << '\n'
+         << "mdip is multi region: " << is_multi_region_diploid<mdip>::value
+         << '\n'
+         << "mdip is custom: " << is_custom_diploid<mdip>::value << '\n';
     cout << is_null_pointer<decltype(get<0>(dip{}))>::value << '\n';
     cout << is_null_pointer<nullptr_t>::value << '\n';
     cout
