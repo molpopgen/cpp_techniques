@@ -33,7 +33,9 @@ template <typename T, typename = void> struct is_pair_like : false_type
 template <typename T>
 struct is_pair_like<
     T, typename void_t<typename T::first_type, typename T::second_type>::type>
-    : true_type
+    : std::integral_constant<
+          bool, std::is_unsigned<typename T::first_type>::value
+                    && std::is_unsigned<typename T::second_type>::value>
 {
 };
 
@@ -98,10 +100,10 @@ struct is_diploid<T, typename void_t<typename tuple_element<0, T>::type>::type>
 {
 };
 
-using dip = pair<int, int>;
-using cdip = std::tuple<pair<int, int>, int>;
-using mdip = std::tuple<vector<pair<int, int>>, int>;
-using adip = std::tuple<array<pair<int, int>, 2>, int>;
+using dip = pair<unsigned, unsigned>;
+using cdip = std::tuple<pair<unsigned, unsigned>, unsigned>;
+using mdip = std::tuple<vector<pair<unsigned, unsigned>>, unsigned>;
+using adip = std::tuple<array<pair<unsigned, unsigned>, 2>, int>;
 
 // The proposal will benefit from helper functions
 // and tag distpatch.  This stuff is pretty standard,
@@ -222,7 +224,8 @@ get_genotypes_dispatch(T& t, multi_region_diploid_tag, standard_diploid_tag)
 template <typename T>
 inline auto
 get_genotypes_dispatch(T& t, multi_region_diploid_tag, custom_diploid_tag) ->
-    typename std::add_lvalue_reference<typename tuple_element<0, T>::type>::type
+    typename std::add_lvalue_reference<
+        typename tuple_element<0, T>::type>::type
 {
     static_assert(is_diploid<T>::value, "T must be a diploid type");
     return std::get<0>(t);
@@ -254,47 +257,15 @@ main(int argc, char** argv)
         is_same<get_diploid_tag<cdip>::type, custom_diploid_tag>::value,
         "foo");
 
-    // cout << "dip is single region: " << is_single_region_diploid<dip>::value
-    //     << '\n';
-    // cout << "dip is custom: " << is_custom_diploid<dip>::value << '\n';
-    // cout << "cdip is single region: " <<
-    // is_single_region_diploid<cdip>::value
-    //     << '\n';
-    // cout << "cdip is custom: " << is_custom_diploid<cdip>::value << '\n';
-    // cout << "int is custom dip: " << is_custom_diploid<int>::value << '\n';
-    // cout << "mdip is single region: " <<
-    // is_single_region_diploid<mdip>::value
-    //     << '\n'
-    //     << "mdip is multi region: " << is_multi_region_diploid<mdip>::value
-    //     << '\n'
-    //     << "mdip is custom: " << is_custom_diploid<mdip>::value << '\n';
-    // cout << "vector<pair<int,int>> is multi region: "
-    //     << is_multi_region_diploid<vector<pair<int, int>>>::value << '\n';
-    // cout << "array<pair<int,int>,2> is multi region: "
-    //     << is_multi_region_diploid<array<pair<int, int>, 2>>::value << '\n';
-    // cout << "pair<int,int> is single region: "
-    //     << is_single_region_diploid<pair<int, int>>::value << '\n'
-    //     << "pair<pair<int,int>,int> is single region "
-    //     << is_single_region_diploid<pair<pair<int, int>, int>>::value <<
-    //     '\n'
-    //     << "pair<tuple<int,int>,int> is single region "
-    //     << is_single_region_diploid<pair<tuple<int, int>, int>>::value <<
-    //     '\n'
-    //     << "tuple<pair<int,int>,int> is single region "
-    //     << is_single_region_diploid<tuple<pair<int, int>, int>>::value <<
-    //     '\n'
-    //     << "tuple<int,int> is single region: "
-    //     << is_single_region_diploid<tuple<int, int>>::value << '\n';
-
-    pair<int, int> x{ 1, 2 };
+    pair<unsigned, unsigned> x{ 1, 2 };
     assert(get_first(x) == 1);
     assert(get_second(x) == 2);
     get_second(x) = 2;
     assert(get_second(x) == 2);
     get_first(x) += 4;
     assert(get_first(x) == 5);
-    const pair<int, int> y{ -3, 5 };
-    assert(get_first(y) == -3);
+    const pair<unsigned, unsigned> y{ 3, 5 };
+    assert(get_first(y) == 3);
     assert(get_second(y) == 5);
 
     // Fails to compile:
@@ -325,31 +296,34 @@ main(int argc, char** argv)
     assert(get_genotypes(md) == get<0>(md));
     for (auto& i : get_genotypes(md))
         {
-			i.first = -1;
+            i.first = 112412;
             cout << i.first << ' ' << i.second << '\n';
         }
     for (auto& i : get_genotypes(md))
-	{
-		cout << i.first << '\n';
-	}
-    array<pair<int, int>, 2> a{ { { 1, 2 }, { 3, 4 } } };
+        {
+            cout << i.first << '\n';
+        }
+    array<pair<unsigned, unsigned>, 2> a{ { { 1, 2 }, { 3, 4 } } };
     adip ad{ move(a), 1 };
     for (auto& i : get_genotypes(ad))
         {
             cout << i.first << ' ' << i.second << '\n';
         }
 
-	static_assert(is_reference<remove_const<decltype(get_genotypes(md))>::type>::value, "foo");
-	static_assert(is_reference<decltype(get_genotypes(md))>::value, "foo");
+    static_assert(
+        is_reference<remove_const<decltype(get_genotypes(md))>::type>::value,
+        "foo");
+    static_assert(is_reference<decltype(get_genotypes(md))>::value, "foo");
 
-	const mdip cmd(md);
-	static_assert(is_const<remove_reference<decltype(get_genotypes(cmd))>::type>::value, "foo");
-	static_assert(is_reference<decltype(get_genotypes(cmd))>::value, "foo");
-	for(auto & i : get_genotypes(md))
-	{
-		cout << i.first << ' ' << i.second << '\n';
-	}
-
+    const mdip cmd(md);
+    static_assert(
+        is_const<remove_reference<decltype(get_genotypes(cmd))>::type>::value,
+        "foo");
+    static_assert(is_reference<decltype(get_genotypes(cmd))>::value, "foo");
+    for (auto& i : get_genotypes(md))
+        {
+            cout << i.first << ' ' << i.second << '\n';
+        }
 
     static_assert(is_diploid<cdip>::value, "foo");
     static_assert(is_diploid<dip>::value, "foo");
@@ -359,6 +333,7 @@ main(int argc, char** argv)
     static_assert(is_diploid<decltype(ad)>::value, "foo");
 
     // These are NOT diploids
+	static_assert(!is_diploid<pair<int,int>>::value, "foo"); //int not unsigned
     static_assert(!is_diploid<tuple<int, int>>::value, "foo");
     static_assert(!is_diploid<int>::value, "foo");
     static_assert(!is_custom_diploid<tuple<int, int>>::value, "foo");
