@@ -1,5 +1,13 @@
 // Models current proposal in fwdpp to refactor def'n of diploid
 
+// The goal is:
+// pair<int-like,int-like>, aka pii is a single-locus diploid
+// tuple<pii, T> is a single-locus-diploid with metadata
+// array_like<pii> is a multi-locus diploid.  array_like could be std::vector,
+// std::array, or any duck-type thereof
+// tuple<array_like<pii>,T> is a multi-locus diploid with meta-data.
+// We should not care if the tuples are longer than two elements.
+
 #include <type_traits>
 #include <utility>
 #include <vector>
