@@ -26,12 +26,12 @@ template <typename...> struct void_t
     typedef void type;
 };
 
-template <typename T, typename = void> struct is_pair_like : false_type
+template <typename T, typename = void> struct is_pair_unsigned_like : false_type
 {
 };
 
 template <typename T>
-struct is_pair_like<
+struct is_pair_unsigned_like<
     T, typename void_t<typename T::first_type, typename T::second_type>::type>
     : std::integral_constant<
           bool, std::is_unsigned<typename T::first_type>::value
@@ -50,8 +50,8 @@ struct is_single_region_diploid<
     : std::integral_constant<
           bool, (is_integral<typename tuple_element<0, T>::type>::value
                  && is_integral<typename tuple_element<1, T>::type>::value
-                 && is_pair_like<T>::value)
-                    || is_pair_like<typename tuple_element<0, T>::type>::value>
+                 && is_pair_unsigned_like<T>::value)
+                    || is_pair_unsigned_like<typename tuple_element<0, T>::type>::value>
 {
 };
 
@@ -63,14 +63,14 @@ struct is_multi_region_diploid : false_type
 template <typename T>
 struct is_multi_region_diploid<T,
                                typename void_t<typename T::value_type>::type>
-    : is_pair_like<typename T::value_type>
+    : is_pair_unsigned_like<typename T::value_type>
 {
 };
 
 template <typename T>
 struct is_multi_region_diploid<
     T, typename void_t<typename tuple_element<0, T>::type::value_type>::type>
-    : is_pair_like<typename tuple_element<0, T>::type::value_type>
+    : is_pair_unsigned_like<typename tuple_element<0, T>::type::value_type>
 {
 };
 
