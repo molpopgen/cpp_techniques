@@ -1,6 +1,8 @@
 // Playing with "uniform initialization"
 #include <iostream>
+#include <vector>
 #include <string>
+
 struct foo
 {
     int a;
@@ -53,4 +55,7 @@ int main(int argc, char **argv)
     std::cout << a.a << ' ' << a.b << '\n';
 
     b = make_type<bar>()(1);
+
+    std::vector<foo> vfoo;
+    vfoo.emplace_back(foo{1,2});
 }
