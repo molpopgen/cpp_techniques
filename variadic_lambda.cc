@@ -2,6 +2,8 @@
 // can it be modified to work with C++11
 // GCC: conda/4.8.5
 // clang: whatever's on OS X
+// Update: it works on GCC 4.9 and later just fine,
+// so it is an issue with conda/gcc
 #include <functional>
 #include <iostream>
 
